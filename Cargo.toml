@@ -1,0 +1,6 @@
+[workspace]
+members=[
+    "geyser",
+    "serializer",
+    "solana-snapshot-etl",
+]

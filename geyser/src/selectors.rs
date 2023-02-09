@@ -53,6 +53,10 @@ impl AccountSelector {
 
     #[inline]
     pub fn is_selected_2(&self, acct: &ReplicaAccountInfoV2, is_startup: bool) -> bool {
+        if self.all_accounts {
+            return true;
+        }
+
         if self.deletion
             && acct.lamports == 0
             && acct.data.is_empty()

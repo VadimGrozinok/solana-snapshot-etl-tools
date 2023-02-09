@@ -66,6 +66,11 @@ pub struct Accounts {
     /// - `false`: Ignore deletion events.
     /// - `true`: Send deletion events.
     pub deletion: bool,
+
+    /// Whether to collect all the accounts
+    /// 
+    /// If activated list of owners is ignoring
+    pub all_accounts: bool,
 }
 
 impl Config {

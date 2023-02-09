@@ -7,6 +7,7 @@ pub struct AccountSelector {
     owners: HashSet<[u8; 32]>,
     startup: Option<bool>,
     deletion: bool,
+    all_accounts: bool,
 }
 
 impl AccountSelector {
@@ -15,6 +16,7 @@ impl AccountSelector {
             owners,
             startup,
             deletion,
+            all_accounts,
         } = config;
 
         let owners = owners
@@ -27,11 +29,16 @@ impl AccountSelector {
             owners,
             startup,
             deletion,
+            all_accounts,
         })
     }
 
     #[inline]
     pub fn is_selected(&self, acct: &ReplicaAccountInfo, is_startup: bool) -> bool {
+        if self.all_accounts {
+            return true;
+        }
+
         if self.deletion
             && acct.lamports == 0
             && acct.data.is_empty()

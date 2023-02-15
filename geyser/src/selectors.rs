@@ -1,5 +1,8 @@
 use super::config::Accounts;
-use crate::{interface::{ReplicaAccountInfo, ReplicaAccountInfoV2}, prelude::*};
+use crate::{
+    interface::{ReplicaAccountInfo, ReplicaAccountInfoV2},
+    prelude::*,
+};
 use hashbrown::HashSet;
 
 #[derive(Debug)]
@@ -41,7 +44,8 @@ impl AccountSelector {
         }
 
         // TODO: change it because now it loads only sturtup accounts
-        self.startup.map_or(true, |s| is_startup == s) && self.owners.contains(acct.owner)
+        self.startup.map_or(true, |s| is_startup == s)
+            && (self.owners.len() == 0 || self.owners.contains(acct.owner))
     }
 
     #[inline]
@@ -55,7 +59,8 @@ impl AccountSelector {
         }
 
         // TODO: change it because now it loads only sturtup accounts
-        self.startup.map_or(true, |s| is_startup == s) && self.owners.contains(acct.owner)
+        self.startup.map_or(true, |s| is_startup == s)
+            && (self.owners.len() == 0 || self.owners.contains(acct.owner))
     }
 }
 

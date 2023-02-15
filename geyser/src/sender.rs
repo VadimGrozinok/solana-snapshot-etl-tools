@@ -53,21 +53,6 @@ impl<S: Serialization> Sender<S> {
         ThreadedProducer::from_config(&config)
     }
 
-    // TODO: not sure if we need it, seems like kafka client can do it already
-    async fn connect<'a>(
-        &'a self,
-        prod: RwLockReadGuard<'a, Producer>,
-    ) -> KafkaResult<RwLockReadGuard<'a, Producer>> {
-        // Anti-deadlock safeguard - force the current reader to hand us their
-        // lock so we can make sure it's destroyed.
-        std::mem::drop(prod);
-        let mut prod = self.producer.write().await;
-
-        *prod = Self::create_producer(&self.conf).await?;
-
-        Ok(prod.downgrade())
-    }
-
     pub async fn send(&self, msg: Message, exchange_type: ExchangeType) {
         #[inline]
         fn log_err<E: std::fmt::Debug>(counter: &'_ Counter) -> impl FnOnce(E) + '_ {

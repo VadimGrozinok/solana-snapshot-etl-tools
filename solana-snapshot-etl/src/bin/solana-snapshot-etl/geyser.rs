@@ -21,7 +21,7 @@ impl AppendVecConsumer for GeyserDumper {
         for account in append_vec_iter(Rc::new(append_vec)) {
             let account = account.access().unwrap();
             self.dump_account(account)?;
-            std::thread::sleep(std::time::Duration::from_nanos(1));
+            std::thread::sleep(std::time::Duration::from_micros(300));
         }
         Ok(())
     }

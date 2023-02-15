@@ -183,7 +183,10 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                         });
 
                         // 4 == MetadataV1 account
-                        if acct.owner == MPL_METADATA.as_ref() && acct.data[0] == 4 {
+                        if this.acct_sel.with_offchain()
+                            && acct.owner == MPL_METADATA.as_ref()
+                            && acct.data[0] == 4
+                        {
                             // key, update auth pubkey, mint pubkey, name, symbol
                             let start = 1 + 32 + 32 + 4 + 32 + 4 + 10 + 4;
                             let end = start + 200;
@@ -252,7 +255,10 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                         });
 
                         // 4 == MetadataV1 account
-                        if acct.owner == MPL_METADATA.as_ref() && acct.data[0] == 4 {
+                        if this.acct_sel.with_offchain()
+                            && acct.owner == MPL_METADATA.as_ref()
+                            && acct.data[0] == 4
+                        {
                             // key, update auth pubkey, mint pubkey, name, symbol
                             let start = 1 + 32 + 32 + 4 + 32 + 4 + 10 + 4;
                             let end = start + 200;

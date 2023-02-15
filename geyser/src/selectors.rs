@@ -10,6 +10,7 @@ pub struct AccountSelector {
     owners: HashSet<[u8; 32]>,
     startup: Option<bool>,
     deletion: bool,
+    with_offchain: Option<bool>,
 }
 
 impl AccountSelector {
@@ -18,6 +19,7 @@ impl AccountSelector {
             owners,
             startup,
             deletion,
+            with_offchain,
         } = config;
 
         let owners = owners
@@ -30,6 +32,7 @@ impl AccountSelector {
             owners,
             startup,
             deletion,
+            with_offchain,
         })
     }
 
@@ -61,6 +64,11 @@ impl AccountSelector {
         // TODO: change it because now it loads only sturtup accounts
         self.startup.map_or(true, |s| is_startup == s)
             && (self.owners.len() == 0 || self.owners.contains(acct.owner))
+    }
+
+    #[inline]
+    pub fn with_offchain(&self) -> bool {
+        self.with_offchain.is_some() && self.with_offchain.unwrap()
     }
 }
 

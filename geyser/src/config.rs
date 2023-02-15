@@ -57,6 +57,13 @@ pub struct Accounts {
     /// - `false`: Ignore deletion events.
     /// - `true`: Send deletion events.
     pub deletion: bool,
+
+    /// Add metaplex offchain data.
+    ///
+    /// This option has two states:
+    ///  - `None` or `Some(false)`: Ignore the `is_startup` flag and send all updates.
+    /// - `true`: Send metaplex offchain data.
+    pub with_offchain: Option<bool>,
 }
 
 impl Config {

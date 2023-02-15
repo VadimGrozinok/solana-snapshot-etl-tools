@@ -24,7 +24,8 @@
       "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     ],
     "startup": false,
-    "deletion": true
+    "deletion": true,
+    "with_offchain": false
   },
   "transactionPrograms": []
 }

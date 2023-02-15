@@ -14,9 +14,6 @@ pub struct Config {
     kafka_topics: KafkaTopics,
     jobs: Jobs,
 
-    #[serde(default)]
-    metrics: Metrics,
-
     accounts: Accounts,
 
     transaction_programs: HashSet<String>,
@@ -39,12 +36,6 @@ pub struct Jobs {
 
     #[serde(default)]
     pub blocking: Option<usize>,
-}
-
-#[derive(Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Metrics {
-    pub config: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -82,7 +73,6 @@ impl Config {
         HashMap<String, String>,
         KafkaTopics,
         Jobs,
-        Metrics,
         AccountSelector,
         TransactionSelector,
     )> {
@@ -90,7 +80,6 @@ impl Config {
             kafka,
             kafka_topics,
             jobs,
-            metrics,
             accounts,
             transaction_programs: instruction_programs,
         } = self;
@@ -100,7 +89,7 @@ impl Config {
         let ins = TransactionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((kafka, kafka_topics, jobs, metrics, acct, ins))
+        Ok((kafka, kafka_topics, jobs, acct, ins))
     }
 }
 

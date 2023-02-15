@@ -31,7 +31,6 @@ tokio-reactor-trait = "1.1.0"
 solana-geyser-plugin-interface = "~1.11.3"
 solana-logger = "~1.11.3"
 solana-program = "~1.11.3"
-solana-metrics = "~1.11.3"
 spl-token = "~3.5.0"
 rdkafka = { version = "0.28", features = ["ssl-vendored", "sasl"] }
 serializer = { path = "../serializer", optional = true }

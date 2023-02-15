@@ -1,0 +1,3 @@
+[submodule "solana-snapshot-finder"]
+	path = solana-snapshot-finder
+	url = git@github.com:c29r3/solana-snapshot-finder.git

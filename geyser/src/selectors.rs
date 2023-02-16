@@ -7,6 +7,7 @@ use hashbrown::HashSet;
 
 #[derive(Debug)]
 pub struct AccountSelector {
+    enabled: bool,
     owners: HashSet<[u8; 32]>,
     startup: Option<bool>,
     deletion: bool,
@@ -16,6 +17,7 @@ pub struct AccountSelector {
 impl AccountSelector {
     pub fn from_config(config: Accounts) -> Result<Self> {
         let Accounts {
+            enabled,
             owners,
             startup,
             deletion,
@@ -29,6 +31,7 @@ impl AccountSelector {
             .context("Failed to parse account owner keys")?;
 
         Ok(Self {
+            enabled,
             owners,
             startup,
             deletion,
@@ -38,6 +41,10 @@ impl AccountSelector {
 
     #[inline]
     pub fn is_selected(&self, acct: &ReplicaAccountInfo, is_startup: bool) -> bool {
+        if !self.enabled {
+            return false;
+        }
+
         if self.deletion
             && acct.lamports == 0
             && acct.data.is_empty()
@@ -53,6 +60,10 @@ impl AccountSelector {
 
     #[inline]
     pub fn is_selected_2(&self, acct: &ReplicaAccountInfoV2, is_startup: bool) -> bool {
+        if !self.enabled {
+            return false;
+        }
+
         if self.deletion
             && acct.lamports == 0
             && acct.data.is_empty()
@@ -68,7 +79,7 @@ impl AccountSelector {
 
     #[inline]
     pub fn with_offchain(&self) -> bool {
-        self.with_offchain.is_some() && self.with_offchain.unwrap()
+        self.with_offchain.unwrap_or(false)
     }
 }
 

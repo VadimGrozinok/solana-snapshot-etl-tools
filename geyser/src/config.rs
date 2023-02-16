@@ -41,6 +41,13 @@ pub struct Jobs {
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Accounts {
+    /// Whether should stream accounts updates
+    ///
+    /// This option has two states:
+    /// - `false`: Do not send account updates.
+    /// - `true`: Send account updates.
+    pub enabled: bool,
+
     pub owners: HashSet<String>,
 
     /// Filter for changing how to interpret the `is_startup` flag.

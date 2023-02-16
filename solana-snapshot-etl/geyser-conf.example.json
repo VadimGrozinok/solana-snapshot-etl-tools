@@ -20,6 +20,7 @@
     "limit": 16
   },
   "accounts": {
+    "enabled": true,
     "owners": [
       "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
     ],

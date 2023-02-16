@@ -227,7 +227,7 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                             rent_epoch,
                             data,
                             write_version,
-                            txn_signature,
+                            txn_signature: _,
                         } = *acct;
 
                         let key = Pubkey::new_from_array(pubkey.try_into()?);
@@ -352,7 +352,7 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                             Ok(())
                         });
                     }
-                    ReplicaTransactionInfoVersions::V0_0_2(tx) => {}
+                    ReplicaTransactionInfoVersions::V0_0_2(_) => {}
                 }
 
                 Ok(())

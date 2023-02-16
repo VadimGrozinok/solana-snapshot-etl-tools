@@ -16,7 +16,6 @@ use std::collections::HashMap;
 use tokio::sync::RwLock;
 
 pub struct Sender<S> {
-    conf: HashMap<String, String>,
     producer: RwLock<Producer>,
     topics: KafkaTopics,
     serializer: S,
@@ -33,7 +32,6 @@ impl<S: Serialization> Sender<S> {
             .map_err(|e| PluginError::Custom(Box::new(e)))?;
 
         Ok(Self {
-            conf: kafka_conf,
             producer: RwLock::new(producer),
             topics: kafka_topics,
             serializer,
@@ -72,26 +70,36 @@ impl<S: Serialization> Sender<S> {
         match exchange_type {
             ExchangeType::Account => {
                 let record = BaseRecord::<Vec<u8>, _>::to(&self.topics.accounts).payload(&data);
-                prod.send(record).map(|_| ()).map_err(log_err);
+                if let Err(e) = prod.send(record) {
+                    log_err(e)
+                };
             }
             ExchangeType::Transaction => {
                 let record = BaseRecord::<Vec<u8>, _>::to(&self.topics.transactions).payload(&data);
-                prod.send(record).map(|_| ()).map_err(log_err);
+                if let Err(e) = prod.send(record) {
+                    log_err(e)
+                };
             }
             ExchangeType::Metadata => {
                 let record =
                     BaseRecord::<Vec<u8>, _>::to(&self.topics.block_metadata).payload(&data);
-                prod.send(record).map(|_| ()).map_err(log_err);
+                if let Err(e) = prod.send(record) {
+                    log_err(e)
+                };
             }
             ExchangeType::NftData => {
                 let record =
                     BaseRecord::<Vec<u8>, _>::to(&self.topics.nft_off_chain_data).payload(&data);
-                prod.send(record).map(|_| ()).map_err(log_err);
+                if let Err(e) = prod.send(record) {
+                    log_err(e)
+                };
             }
             ExchangeType::Slot => {
                 let record =
                     BaseRecord::<Vec<u8>, _>::to(&self.topics.finalized_slots).payload(&data);
-                prod.send(record).map(|_| ()).map_err(log_err);
+                if let Err(e) = prod.send(record) {
+                    log_err(e)
+                };
             }
         }
     }

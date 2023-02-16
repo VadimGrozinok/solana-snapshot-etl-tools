@@ -14,9 +14,6 @@ pub struct Config {
     kafka_topics: KafkaTopics,
     jobs: Jobs,
 
-    #[serde(default)]
-    metrics: Metrics,
-
     accounts: Accounts,
 
     transaction_programs: HashSet<String>,
@@ -41,15 +38,16 @@ pub struct Jobs {
     pub blocking: Option<usize>,
 }
 
-#[derive(Debug, Default, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct Metrics {
-    pub config: Option<String>,
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Accounts {
+    /// Whether should stream accounts updates
+    ///
+    /// This option has two states:
+    /// - `false`: Do not send account updates.
+    /// - `true`: Send account updates.
+    pub enabled: bool,
+
     pub owners: HashSet<String>,
 
     /// Filter for changing how to interpret the `is_startup` flag.
@@ -66,6 +64,13 @@ pub struct Accounts {
     /// - `false`: Ignore deletion events.
     /// - `true`: Send deletion events.
     pub deletion: bool,
+
+    /// Add metaplex offchain data.
+    ///
+    /// This option has two states:
+    ///  - `None` or `Some(false)`: Ignore the `is_startup` flag and send all updates.
+    /// - `true`: Send metaplex offchain data.
+    pub with_offchain: Option<bool>,
 }
 
 impl Config {
@@ -82,7 +87,6 @@ impl Config {
         HashMap<String, String>,
         KafkaTopics,
         Jobs,
-        Metrics,
         AccountSelector,
         TransactionSelector,
     )> {
@@ -90,7 +94,6 @@ impl Config {
             kafka,
             kafka_topics,
             jobs,
-            metrics,
             accounts,
             transaction_programs: instruction_programs,
         } = self;
@@ -100,7 +103,7 @@ impl Config {
         let ins = TransactionSelector::from_config(instruction_programs)
             .context("Failed to create instruction selector")?;
 
-        Ok((kafka, kafka_topics, jobs, metrics, acct, ins))
+        Ok((kafka, kafka_topics, jobs, acct, ins))
     }
 }
 

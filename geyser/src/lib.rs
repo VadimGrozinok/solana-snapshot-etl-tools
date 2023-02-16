@@ -12,7 +12,6 @@ pub(crate) mod prelude {
     pub type Result<T, E = Error> = StdResult<T, E>;
 }
 pub(crate) mod config;
-pub(crate) mod metrics;
 mod plugin;
 pub(crate) mod selectors;
 pub(crate) mod sender;

@@ -1,31 +1,32 @@
 {
-    "libpath": "../target/release/libgeyser_plugin.so",
-    "kafka": {
-      "bootstrap.servers": "localhost:9092",
-      "request.required.acks": "1",
-      "message.timeout.ms": "30000",
-      "compression.type": "lz4",
-      "partitioner": "murmur2_random"
-    },
-    "kafkaTopics": {
-      "accounts": "sol_accounts_update",
-      "transactions": "sol_transactions_update",
-      "blockMetadata": "sol_block_metadata",
-      "nftOffChainData": "sol_nft_off_chain_data",
-      "finalizedSlots": "sol_finalized_slot"
-    },
-    "jobs": {
-      "limit": 16
-    },
-    "metrics": {
-      "config": "host=https://metrics.solana.com:8086,db=mainnet-beta,u=mainnet-beta_write,p=password"
-    },
-    "accounts": {
-      "owners": [
-        "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
-      ],
-      "startup": false,
-      "deletion": true
-    },
-    "transactionPrograms": []
-    }
+  "libpath": "../target/release/libgeyser_plugin.so",
+  "kafka": {
+    "bootstrap.servers": "localhost:9092",
+    "request.required.acks": "1",
+    "message.timeout.ms": "30000",
+    "compression.type": "lz4",
+    "partitioner": "murmur2_random",
+    "message.max.bytes": "10485880",
+    "batch.size": "64KB"
+  },
+  "kafkaTopics": {
+    "accounts": "sol_accounts_update",
+    "transactions": "sol_transactions_update",
+    "blockMetadata": "sol_block_metadata",
+    "nftOffChainData": "sol_nft_off_chain_data",
+    "finalizedSlots": "sol_finalized_slot"
+  },
+  "jobs": {
+    "limit": 16
+  },
+  "accounts": {
+    "enabled": true,
+    "owners": [
+      "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
+    ],
+    "startup": false,
+    "deletion": true,
+    "with_offchain": false
+  },
+  "transactionPrograms": []
+}

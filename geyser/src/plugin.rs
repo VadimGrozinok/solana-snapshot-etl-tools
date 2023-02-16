@@ -1,10 +1,10 @@
 use crate::{
     config::Config,
     interface::{
-        GeyserPlugin, GeyserPluginError, ReplicaAccountInfo, ReplicaAccountInfoV2, ReplicaAccountInfoVersions,
-        ReplicaBlockInfoVersions, ReplicaTransactionInfoVersions, Result,
+        GeyserPlugin, GeyserPluginError, ReplicaAccountInfo, ReplicaAccountInfoV2,
+        ReplicaAccountInfoVersions, ReplicaBlockInfoVersions, ReplicaTransactionInfoVersions,
+        Result,
     },
-    metrics::{Counter, Metrics},
     prelude::*,
     selectors::{AccountSelector, TransactionSelector},
     sender::Sender,
@@ -30,12 +30,9 @@ const MPL_METADATA: [u8; 32] = [
 
 #[inline]
 fn custom_err<E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>>(
-    counter: &Counter,
-) -> impl FnOnce(E) -> GeyserPluginError + '_ {
-    |e| {
-        counter.log(1);
-        GeyserPluginError::Custom(e.into())
-    }
+    e: E,
+) -> GeyserPluginError {
+    GeyserPluginError::Custom(e.into())
 }
 
 pub(crate) struct Inner {
@@ -43,7 +40,6 @@ pub(crate) struct Inner {
     producer: Sender<Serializer>,
     acct_sel: AccountSelector,
     tx_sel: TransactionSelector,
-    metrics: Arc<Metrics>,
 }
 
 impl Inner {
@@ -72,7 +68,7 @@ impl GeyserPluginRabbitMq {
         f: impl FnOnce(&Arc<Inner>) -> anyhow::Result<T>,
     ) -> Result<T> {
         match self.0 {
-            Some(ref inner) => f(inner).map_err(custom_err(&inner.metrics.errs)),
+            Some(ref inner) => f(inner).map_err(custom_err),
             None => Err(uninit()),
         }
     }
@@ -92,8 +88,6 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
     fn on_load(&mut self, cfg: &str) -> Result<()> {
         solana_logger::setup_with_default("info");
 
-        let metrics = Metrics::new_rc();
-
         {
             let ver = env!("CARGO_PKG_VERSION");
             let git = option_env!("META_GIT_HEAD");
@@ -109,19 +103,9 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
             }
         }
 
-        let (kafka_conf, kafka_topics, jobs, metrics_conf, acct_sel, ins_sel) = Config::read(cfg)
+        let (kafka_conf, kafka_topics, jobs, acct_sel, ins_sel) = Config::read(cfg)
             .and_then(Config::into_parts)
-            .map_err(custom_err(&metrics.errs))?;
-
-        if let Some(config) = metrics_conf.config {
-            const VAR: &str = "SOLANA_METRICS_CONFIG";
-
-            if env::var_os(VAR).is_some() {
-                warn!("Overriding existing value for {}", VAR);
-            }
-
-            env::set_var(VAR, config);
-        }
+            .map_err(custom_err)?;
 
         let rt = tokio::runtime::Builder::new_multi_thread()
             .enable_all()
@@ -129,17 +113,12 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
             .worker_threads(jobs.limit)
             .max_blocking_threads(jobs.blocking.unwrap_or(jobs.limit))
             .build()
-            .map_err(custom_err(&metrics.errs))?;
+            .map_err(custom_err)?;
 
         let producer = rt.block_on(async {
-            let producer = Sender::new(
-                kafka_conf,
-                kafka_topics,
-                Arc::clone(&metrics),
-                Serializer {},
-            )
-            .await
-            .map_err(custom_err(&metrics.errs))?;
+            let producer = Sender::new(kafka_conf, kafka_topics, Serializer {})
+                .await
+                .map_err(custom_err)?;
 
             Result::<_>::Ok(producer)
         })?;
@@ -149,7 +128,6 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
             producer,
             acct_sel,
             tx_sel: ins_sel,
-            metrics,
         }));
 
         Ok(())
@@ -164,8 +142,6 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
         self.with_inner(
             || GeyserPluginError::AccountsUpdateError { msg: UNINIT.into() },
             |this| {
-                this.metrics.recvs.log(1);
-
                 match account {
                     ReplicaAccountInfoVersions::V0_0_1(acct) => {
                         if !this.acct_sel.is_selected(acct, is_startup) {
@@ -202,13 +178,15 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                             this.producer
                                 .send(Message::AccountUpdate(msg_data), ExchangeType::Account)
                                 .await;
-                            this.metrics.sends.log(1);
 
                             Ok(())
                         });
 
                         // 4 == MetadataV1 account
-                        if acct.owner == MPL_METADATA.as_ref() && acct.data[0] == 4 {
+                        if this.acct_sel.with_offchain()
+                            && acct.owner == MPL_METADATA.as_ref()
+                            && acct.data[0] == 4
+                        {
                             // key, update auth pubkey, mint pubkey, name, symbol
                             let start = 1 + 32 + 32 + 4 + 32 + 4 + 10 + 4;
                             let end = start + 200;
@@ -230,7 +208,6 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                                             ExchangeType::NftData,
                                         )
                                         .await;
-                                    this.metrics.sends.log(1);
 
                                     Ok(())
                                 });
@@ -250,7 +227,7 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                             rent_epoch,
                             data,
                             write_version,
-                            txn_signature,
+                            txn_signature: _,
                         } = *acct;
 
                         let key = Pubkey::new_from_array(pubkey.try_into()?);
@@ -273,13 +250,15 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                             this.producer
                                 .send(Message::AccountUpdate(msg_data), ExchangeType::Account)
                                 .await;
-                            this.metrics.sends.log(1);
 
                             Ok(())
                         });
 
                         // 4 == MetadataV1 account
-                        if acct.owner == MPL_METADATA.as_ref() && acct.data[0] == 4 {
+                        if this.acct_sel.with_offchain()
+                            && acct.owner == MPL_METADATA.as_ref()
+                            && acct.data[0] == 4
+                        {
                             // key, update auth pubkey, mint pubkey, name, symbol
                             let start = 1 + 32 + 32 + 4 + 32 + 4 + 10 + 4;
                             let end = start + 200;
@@ -301,7 +280,6 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                                             ExchangeType::NftData,
                                         )
                                         .await;
-                                    this.metrics.sends.log(1);
 
                                     Ok(())
                                 });
@@ -324,14 +302,11 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
         self.with_inner(
             || GeyserPluginError::SlotStatusUpdateError { msg: UNINIT.into() },
             |this| {
-                this.metrics.recvs.log(1);
-
                 if let SlotStatus::Rooted = status {
                     this.spawn(|this| async move {
                         this.producer
                             .send(Message::FinalizedSlotNotify(slot), ExchangeType::Slot)
                             .await;
-                        this.metrics.sends.log(1);
 
                         Ok(())
                     });
@@ -350,8 +325,6 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
         self.with_inner(
             || GeyserPluginError::Custom(anyhow!(UNINIT).into()),
             |this| {
-                this.metrics.recvs.log(1);
-
                 match transaction {
                     ReplicaTransactionInfoVersions::V0_0_1(tx) => {
                         if matches!(tx.transaction_status_meta.status, Err(..)) {
@@ -375,12 +348,11 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                                     ExchangeType::Transaction,
                                 )
                                 .await;
-                            this.metrics.sends.log(1);
 
                             Ok(())
                         });
                     }
-                    ReplicaTransactionInfoVersions::V0_0_2(tx) => {}
+                    ReplicaTransactionInfoVersions::V0_0_2(_) => {}
                 }
 
                 Ok(())
@@ -400,7 +372,6 @@ impl GeyserPlugin for GeyserPluginRabbitMq {
                             this.producer
                                 .send(Message::MetadataNotify(msg_data), ExchangeType::Metadata)
                                 .await;
-                            this.metrics.sends.log(1);
 
                             Ok(())
                         });

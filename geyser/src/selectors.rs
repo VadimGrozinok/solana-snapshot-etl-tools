@@ -1,20 +1,27 @@
 use super::config::Accounts;
-use crate::{interface::{ReplicaAccountInfo, ReplicaAccountInfoV2}, prelude::*};
+use crate::{
+    interface::{ReplicaAccountInfo, ReplicaAccountInfoV2},
+    prelude::*,
+};
 use hashbrown::HashSet;
 
 #[derive(Debug)]
 pub struct AccountSelector {
+    enabled: bool,
     owners: HashSet<[u8; 32]>,
     startup: Option<bool>,
     deletion: bool,
+    with_offchain: Option<bool>,
 }
 
 impl AccountSelector {
     pub fn from_config(config: Accounts) -> Result<Self> {
         let Accounts {
+            enabled,
             owners,
             startup,
             deletion,
+            with_offchain,
         } = config;
 
         let owners = owners
@@ -24,14 +31,20 @@ impl AccountSelector {
             .context("Failed to parse account owner keys")?;
 
         Ok(Self {
+            enabled,
             owners,
             startup,
             deletion,
+            with_offchain,
         })
     }
 
     #[inline]
     pub fn is_selected(&self, acct: &ReplicaAccountInfo, is_startup: bool) -> bool {
+        if !self.enabled {
+            return false;
+        }
+
         if self.deletion
             && acct.lamports == 0
             && acct.data.is_empty()
@@ -41,11 +54,16 @@ impl AccountSelector {
         }
 
         // TODO: change it because now it loads only sturtup accounts
-        self.startup.map_or(true, |s| is_startup == s) && self.owners.contains(acct.owner)
+        self.startup.map_or(true, |s| is_startup == s)
+            && (self.owners.len() == 0 || self.owners.contains(acct.owner))
     }
 
     #[inline]
     pub fn is_selected_2(&self, acct: &ReplicaAccountInfoV2, is_startup: bool) -> bool {
+        if !self.enabled {
+            return false;
+        }
+
         if self.deletion
             && acct.lamports == 0
             && acct.data.is_empty()
@@ -55,7 +73,13 @@ impl AccountSelector {
         }
 
         // TODO: change it because now it loads only sturtup accounts
-        self.startup.map_or(true, |s| is_startup == s) && self.owners.contains(acct.owner)
+        self.startup.map_or(true, |s| is_startup == s)
+            && (self.owners.len() == 0 || self.owners.contains(acct.owner))
+    }
+
+    #[inline]
+    pub fn with_offchain(&self) -> bool {
+        self.with_offchain.unwrap_or(false)
     }
 }
 

@@ -1,6 +1,5 @@
 [workspace]
 members=[
-    "geyser",
-    "serializer",
+    "solana-geyser-zmq",
     "solana-snapshot-etl",
 ]

@@ -43,7 +43,6 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     // };
 
     let mut loader = SupportedLoader::new(&args.source, Box::new(LoadProgressTracking {}))?;
-
     info!("Dumping to Geyser plugin: {}", &args.geyser);
 
     let plugin = unsafe { load_plugin(&args.geyser)? };

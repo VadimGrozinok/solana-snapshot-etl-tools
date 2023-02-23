@@ -3,9 +3,9 @@ This repository collects 3 necessary things to fill any DB with current state of
 
 [Solana-snapshot-etl](https://github.com/terorie/solana-snapshot-etl) and [solana-snapshot-finder](https://github.com/c29r3/solana-snapshot-finder) were NOT written by me. Shout-out to guys and thanks for their work.
 
-```
+```bash
 sudo apt-get install -y build-essential libsasl2-dev pkg-config libssl-dev \
-&& git submodule update
+&& git submodule init && git submodule update
 ```
 
 ### Download snapshot

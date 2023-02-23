@@ -1,19 +1,19 @@
 use crate::geyser::GeyserDumper;
-use crate::geyser_plugin::load_plugin;
 use clap::Parser;
 use indicatif::{ProgressBar, ProgressBarIter, ProgressStyle};
+use libloading::{Library, Symbol};
 use log::{error, info};
 use reqwest::blocking::Response;
+use solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPlugin;
 use solana_snapshot_etl::archived::ArchiveSnapshotExtractor;
 use solana_snapshot_etl::parallel::AppendVecConsumer;
 use solana_snapshot_etl::unpacked::UnpackedSnapshotExtractor;
 use solana_snapshot_etl::{AppendVecIterator, ReadProgressTracking, SnapshotExtractor};
 use std::fs::File;
 use std::io::{IoSliceMut, Read};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 mod geyser;
-mod geyser_plugin;
 mod mpl_metadata;
 
 #[derive(Parser, Debug)]
@@ -38,8 +38,8 @@ fn main() {
 fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let args = Args::parse();
     // let args = Args {
-    // source: String::from("/Users/eugene/solana/incremental-snapshot-179082967-179084967-A5JfbbCiLfrqrxuCQ3Dtt7zpxrUkQ5eVtimqoDjvXwnR.tar.zst"),
-    // geyser: Some(String::from("/Users/eugene/workspace/solana/solana-snapshot-etl-tools/solana-snapshot-etl/geyser-conf.json")),
+    // source: String::from("~/solana/incremental-snapshot-179082967-179084967-A5JfbbCiLfrqrxuCQ3Dtt7zpxrUkQ5eVtimqoDjvXwnR.tar.zst"),
+    // geyser: String::from("~/workspace/solana/solana-snapshot-etl-tools/solana-snapshot-etl/geyser-conf.json"),
     // };
 
     let mut loader = SupportedLoader::new(&args.source, Box::new(LoadProgressTracking {}))?;
@@ -68,6 +68,48 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Done!");
 
     Ok(())
+}
+
+/// # Safety
+///
+/// This function loads the dynamically linked library specified in the config file.
+///
+/// Causes memory corruption/UB on mismatching rustc or Solana versions, or if you look at the wrong way.
+pub unsafe fn load_plugin(
+    config_file: &str,
+) -> Result<Box<dyn GeyserPlugin>, Box<dyn std::error::Error>> {
+    let config_path = PathBuf::from(config_file);
+
+    let config_content = std::fs::read_to_string(config_file)?;
+    let config: serde_json::Value = json5::from_str(&config_content)?;
+
+    let libpath = config["libpath"]
+        .as_str()
+        .ok_or("Missing libpath param in Geyser config")?;
+    let mut libpath = PathBuf::from(libpath);
+    if libpath.is_relative() {
+        let config_dir = config_path
+            .parent()
+            .expect("failed to resolve parent of Geyser config file");
+        libpath = config_dir.join(libpath);
+    }
+
+    load_plugin_inner(&libpath, &config_path.to_string_lossy())
+}
+
+unsafe fn load_plugin_inner(
+    libpath: &Path,
+    config_file: &str,
+) -> Result<Box<dyn GeyserPlugin>, Box<dyn std::error::Error>> {
+    type PluginConstructor = unsafe fn() -> *mut dyn GeyserPlugin;
+    // Load library and leak, as we never want to unload it.
+    let lib = Box::leak(Box::new(Library::new(libpath)?));
+    let constructor: Symbol<PluginConstructor> = lib.get(b"_create_plugin")?;
+    // Unsafe call down to library.
+    let plugin_raw = constructor();
+    let mut plugin = Box::from_raw(plugin_raw);
+    plugin.on_load(config_file)?;
+    Ok(plugin)
 }
 
 struct LoadProgressTracking {}

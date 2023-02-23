@@ -21,7 +21,6 @@ impl AppendVecConsumer for GeyserDumper {
         for account in append_vec_iter(Rc::new(append_vec)) {
             let account = account.access().unwrap();
             self.dump_account(account)?;
-            std::thread::sleep(std::time::Duration::from_micros(300));
         }
         Ok(())
     }
@@ -50,20 +49,20 @@ impl GeyserDumper {
         account: StoredAccountMeta,
     ) -> Result<(), Box<dyn Error>> {
         let slot = 165126733u64; // TODO fix slot number
-        self.plugin.update_account(
-            ReplicaAccountInfoVersions::V0_0_2(&ReplicaAccountInfoV2 {
-                pubkey: account.meta.pubkey.as_ref(),
-                lamports: account.account_meta.lamports,
-                owner: account.account_meta.owner.as_ref(),
-                executable: account.account_meta.executable,
-                rent_epoch: account.account_meta.rent_epoch,
-                data: account.data,
-                write_version: account.meta.write_version,
-                txn_signature: None,
-            }),
-            slot,
-            /* is_startup */ false,
-        )?;
+                                 // self.plugin.update_account(
+                                 //     ReplicaAccountInfoVersions::V0_0_2(&ReplicaAccountInfoV2 {
+                                 //         pubkey: account.meta.pubkey.as_ref(),
+                                 //         lamports: account.account_meta.lamports,
+                                 //         owner: account.account_meta.owner.as_ref(),
+                                 //         executable: account.account_meta.executable,
+                                 //         rent_epoch: account.account_meta.rent_epoch,
+                                 //         data: account.data,
+                                 //         write_version: account.meta.write_version,
+                                 //         txn_signature: None,
+                                 //     }),
+                                 //     slot,
+                                 //     /* is_startup */ false,
+                                 // )?;
         self.accounts_count += 1;
         if self.accounts_count % 1024 == 0 {
             self.accounts_spinner.set_position(self.accounts_count);

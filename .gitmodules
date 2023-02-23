@@ -1,3 +1,6 @@
 [submodule "solana-snapshot-finder"]
 	path = solana-snapshot-finder
 	url = git@github.com:c29r3/solana-snapshot-finder.git
+[submodule "solana-geyser-zmq"]
+	path = solana-geyser-zmq
+	url = git@github.com:wedancedalot/solana-geyser-zmq.git

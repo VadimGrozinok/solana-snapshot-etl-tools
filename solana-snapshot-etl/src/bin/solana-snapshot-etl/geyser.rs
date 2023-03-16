@@ -18,9 +18,11 @@ pub(crate) struct GeyserDumper {
 
 impl AppendVecConsumer for GeyserDumper {
     fn on_append_vec(&mut self, append_vec: AppendVec) -> GenericResult<()> {
+        let slot = append_vec.get_slot();
+
         for account in append_vec_iter(Rc::new(append_vec)) {
             let account = account.access().unwrap();
-            self.dump_account(account)?;
+            self.dump_account(account, slot)?;
         }
         Ok(())
     }
@@ -47,8 +49,8 @@ impl GeyserDumper {
     pub(crate) fn dump_account(
         &mut self,
         account: StoredAccountMeta,
+        slot: u64,
     ) -> Result<(), Box<dyn Error>> {
-        let slot = 123456u64; // TODO fix slot number
         self.plugin.update_account(
             ReplicaAccountInfoVersions::V0_0_1(&ReplicaAccountInfo {
                 pubkey: account.meta.pubkey.as_ref(),

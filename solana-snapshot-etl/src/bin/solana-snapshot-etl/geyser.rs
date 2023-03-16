@@ -2,7 +2,7 @@
 
 use indicatif::{ProgressBar, ProgressStyle};
 use solana_geyser_plugin_interface::geyser_plugin_interface::{
-    GeyserPlugin, ReplicaAccountInfoV2, ReplicaAccountInfoVersions,
+    GeyserPlugin, ReplicaAccountInfo, ReplicaAccountInfoVersions,
 };
 use solana_snapshot_etl::append_vec::{AppendVec, StoredAccountMeta};
 use solana_snapshot_etl::append_vec_iter;
@@ -50,7 +50,7 @@ impl GeyserDumper {
     ) -> Result<(), Box<dyn Error>> {
         let slot = 123456u64; // TODO fix slot number
         self.plugin.update_account(
-            ReplicaAccountInfoVersions::V0_0_2(&ReplicaAccountInfoV2 {
+            ReplicaAccountInfoVersions::V0_0_1(&ReplicaAccountInfo {
                 pubkey: account.meta.pubkey.as_ref(),
                 lamports: account.account_meta.lamports,
                 owner: account.account_meta.owner.as_ref(),
@@ -58,7 +58,6 @@ impl GeyserDumper {
                 rent_epoch: account.account_meta.rent_epoch,
                 data: account.data,
                 write_version: account.meta.write_version,
-                txn_signature: None,
             }),
             slot,
             /* is_startup */ false,

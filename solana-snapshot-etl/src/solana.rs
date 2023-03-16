@@ -33,7 +33,6 @@ use solana_sdk::hash::Hash;
 use solana_sdk::inflation::Inflation;
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::slot_history::Slot;
-use solana_sdk::stake::state::Delegation;
 use std::collections::{HashMap, HashSet};
 use std::io::Read;
 
@@ -89,7 +88,7 @@ pub struct DeserializableVersionedBank {
     pub rent_collector: RentCollector,
     pub epoch_schedule: EpochSchedule,
     pub inflation: Inflation,
-    pub stakes: Stakes<Delegation>,
+    pub stakes: Stakes,
     #[allow(dead_code)]
     unused_accounts: UnusedAccounts,
     pub epoch_stakes: HashMap<Epoch, EpochStakes>,

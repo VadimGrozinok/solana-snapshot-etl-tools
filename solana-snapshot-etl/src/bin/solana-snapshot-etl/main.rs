@@ -15,6 +15,7 @@ use std::fs::{File, OpenOptions};
 use std::io::{stdout, IoSliceMut, Read, Write};
 use std::path::{Path, PathBuf};
 
+mod collection_dumper;
 mod csv;
 mod geyser;
 mod geyser_plugin;
@@ -32,6 +33,8 @@ mod sqlite;
 struct Args {
     #[clap(help = "Snapshot source (unpacked snapshot, archive file, or HTTP link)")]
     source: String,
+    #[clap(long, action, help = "Dump collection holders")]
+    collection: bool,
     #[clap(long, action, help = "Write CSV to stdout")]
     csv: bool,
     #[clap(long, help = "Export to new SQLite3 DB at this path")]
@@ -65,6 +68,18 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
         for append_vec in loader.iter() {
             writer.dump_append_vec(append_vec?);
         }
+        drop(writer);
+        println!("Done!");
+    }
+    if args.collection {
+        info!("Dumping collection holders");
+        let mut writer = collection_dumper::CollectionDumper::new();
+        for append_vec in loader.iter() {
+            writer.dump_append_vec(append_vec?);
+        }
+        writer.identify_owners();
+        writer.dump_owners();
+
         drop(writer);
         println!("Done!");
     }

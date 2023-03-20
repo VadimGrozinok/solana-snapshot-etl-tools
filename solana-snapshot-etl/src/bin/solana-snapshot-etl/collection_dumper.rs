@@ -2,6 +2,11 @@ use indicatif::{ProgressBar, ProgressStyle};
 use serde::Serialize;
 use solana_snapshot_etl::append_vec::{AppendVec, StoredAccountMeta};
 use solana_snapshot_etl::append_vec_iter;
+use spl_token::state::Account;
+use solana_sdk::program_pack::Pack;
+use std::collections::HashMap;
+use crate::mpl_metadata::Metadata;
+use borsh::BorshDeserialize;
 use std::io::Stdout;
 use std::fs::File;
 use std::rc::Rc;
@@ -28,7 +33,7 @@ struct Record {
 }
 
 impl CollectionDumper {
-    pub(crate) fn new() -> Self {
+    pub(crate) fn new(collection_id: String) -> Self {
         let spinner_style = ProgressStyle::with_template(
             "{prefix:>10.bold.dim} {spinner} rate={per_sec}/s total={human_pos}",
         )
@@ -43,6 +48,10 @@ impl CollectionDumper {
             accounts_spinner,
             writer,
             accounts_count: 0,
+            collection_id,
+            metadata_mints: Vec::new(),
+            token_owners: HashMap::new(),
+            collection_owners: HashMap::new(),
         }
     }
 
@@ -57,7 +66,8 @@ impl CollectionDumper {
         let owner = account.meta.pubkey.to_string();
 
         if owner == METADATA_PROGRAM_ID && account.data[0] == 4 {
-            let metadata = Metadata::deserialize(account.data).unwrap();
+            let mut data_peek = account.data;
+            let metadata = Metadata::deserialize(&mut data_peek).unwrap();
 
             if let Some(collection) = metadata.collection {
                 if collection.key.to_string() == self.collection_id {
@@ -87,8 +97,8 @@ impl CollectionDumper {
     }
 
     pub(crate) fn identify_owners(&mut self) {
-        for mint in self.metadata_mints {
-            if let Some(owner) = self.token_owners.get(&mint) {
+        for mint in &self.metadata_mints {
+            if let Some(owner) = self.token_owners.get(mint) {
                 if let Some(amount) = self.collection_owners.get_mut(owner) {
                     *amount += 1;
                 } else {
@@ -99,11 +109,11 @@ impl CollectionDumper {
     }
 
     pub(crate) fn dump_owners(&mut self) {
-        for (owner, amount) in self.collection_owners {
-            self.writer.write_record(&[owner, amount]).unwrap();
+        for (owner, amount) in &self.collection_owners {
+            self.writer.write_record(&[owner, &*amount.to_string()]).unwrap();
         }
 
-        wtr.flush().unwrap();
+        self.writer.flush().unwrap();
     }
 }
 

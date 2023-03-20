@@ -19,11 +19,34 @@ pub enum AccountKey {
 
 #[derive(BorshDeserialize)]
 pub struct Metadata {
+    pub key: AccountKey,
     pub update_authority: Pubkey,
     pub mint: Pubkey,
     pub data: Data,
     pub primary_sale_happened: bool,
     pub is_mutable: bool,
+    pub edition_nonce: Option<u8>,
+    pub token_standard: Option<TokenStandard>,
+    pub collection: Option<Collection>,
+    pub uses: Option<Uses>,
+    pub collection_details: Option<CollectionDetails>,
+    pub programmable_config: Option<ProgrammableConfig>,
+}
+
+#[derive(BorshDeserialize)]
+pub enum TokenStandard {
+    NonFungible,             // This is a master edition
+    FungibleAsset,           // A token with metadata that can also have attrributes
+    Fungible,                // A token with simple metadata
+    NonFungibleEdition,      // This is a limited edition
+    ProgrammableNonFungible, // NonFungible with programmable configuration
+}
+
+#[derive(BorshDeserialize)]
+pub enum ProgrammableConfig {
+    V1 {
+        rule_set: Option<Pubkey>,
+    },
 }
 
 #[derive(BorshDeserialize)]

@@ -35,6 +35,8 @@ struct Args {
     source: String,
     #[clap(long, action, help = "Dump collection holders")]
     collection: bool,
+    #[clap(long, help = "Collection ID to dump")]
+    collection_id: Option<String>,
     #[clap(long, action, help = "Write CSV to stdout")]
     csv: bool,
     #[clap(long, help = "Export to new SQLite3 DB at this path")]
@@ -73,7 +75,8 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     }
     if args.collection {
         info!("Dumping collection holders");
-        let mut writer = collection_dumper::CollectionDumper::new();
+        let collection_id = args.collection_id.unwrap();
+        let mut writer = collection_dumper::CollectionDumper::new(collection_id);
         for append_vec in loader.iter() {
             writer.dump_append_vec(append_vec?);
         }

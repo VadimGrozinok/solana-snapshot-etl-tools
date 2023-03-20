@@ -33,8 +33,6 @@ mod sqlite;
 struct Args {
     #[clap(help = "Snapshot source (unpacked snapshot, archive file, or HTTP link)")]
     source: String,
-    #[clap(long, action, help = "Dump collection holders")]
-    collection: bool,
     #[clap(long, help = "Collection ID to dump")]
     collection_id: Option<String>,
     #[clap(long, action, help = "Write CSV to stdout")]
@@ -73,9 +71,8 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
         drop(writer);
         println!("Done!");
     }
-    if args.collection {
+    if let Some(collection_id) = args.collection {
         info!("Dumping collection holders");
-        let collection_id = args.collection_id.unwrap();
         let mut writer = collection_dumper::CollectionDumper::new(collection_id);
         for append_vec in loader.iter() {
             writer.dump_append_vec(append_vec?);

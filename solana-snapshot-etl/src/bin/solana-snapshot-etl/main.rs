@@ -28,7 +28,7 @@ mod sqlite;
 #[clap(group(
     ArgGroup::new("action")
         .required(true)
-        .args(&["csv", "geyser", "sqlite-out", "programs-out"]),
+        .args(&["csv", "geyser", "sqlite-out", "programs-out", "collection-id"]),
 ))]
 struct Args {
     #[clap(help = "Snapshot source (unpacked snapshot, archive file, or HTTP link)")]

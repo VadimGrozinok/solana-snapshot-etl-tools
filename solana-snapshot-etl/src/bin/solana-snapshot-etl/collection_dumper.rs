@@ -63,22 +63,23 @@ impl CollectionDumper {
     }
 
     pub(crate) fn dump_account(&mut self, account: StoredAccountMeta) {
-        let owner = account.meta.pubkey.to_string();
+        let owner = account.account_meta.owner.to_string();
 
         if owner == METADATA_PROGRAM_ID && account.data[0] == 4 {
             let mut data_peek = account.data;
-            let metadata = Metadata::deserialize(&mut data_peek).unwrap();
-
-            if let Some(collection) = metadata.collection {
-                if collection.key.to_string() == self.collection_id {
-                    self.metadata_mints.push(metadata.mint.to_string());
+            let metadata = Metadata::deserialize(&mut data_peek);
+            if let Ok(metadata) = metadata {
+                if let Some(collection) = metadata.collection {
+                    if collection.key.to_string() == self.collection_id {
+                        self.metadata_mints.push(metadata.mint.to_string());
+                    }
                 }
-            }
-
-            if let Some(creators) = metadata.data.creators {
-                let first_one = creators[0].address.to_string();
-                if first_one == self.collection_id {
-                    self.metadata_mints.push(metadata.mint.to_string());
+    
+                if let Some(creators) = metadata.data.creators {
+                    let first_one = creators[0].address.to_string();
+                    if first_one == self.collection_id {
+                        self.metadata_mints.push(metadata.mint.to_string());
+                    }
                 }
             }
         } else if owner == TOKEN_PROGRAM_ID {

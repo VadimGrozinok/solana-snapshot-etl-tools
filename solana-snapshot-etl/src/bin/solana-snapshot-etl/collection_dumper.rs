@@ -67,27 +67,33 @@ impl CollectionDumper {
 
         if owner == METADATA_PROGRAM_ID && account.data[0] == 4 {
             let mut data_peek = account.data;
-            let metadata = Metadata::deserialize(&mut data_peek);
-            if let Ok(metadata) = metadata {
-                if let Some(collection) = metadata.collection {
-                    if collection.key.to_string() == self.collection_id {
-                        self.metadata_mints.push(metadata.mint.to_string());
-                    }
-                }
-    
-                if let Some(creators) = metadata.data.creators {
-                    let first_one = creators[0].address.to_string();
-                    if first_one == self.collection_id {
-                        self.metadata_mints.push(metadata.mint.to_string());
-                    }
-                }
+
+            let start = 1+32+32+4+32+4+10+4+200+2+1+4;
+            let end = start + 32;
+            let first_creator = data_peek[start..end];
+            let first_creator_key = solana_sdk::pubkey::Pubkey::new_from_array(first_creator.try_into().unwrap());
+
+            let start = 1+32+32+4+32+4+10+4+200+2+1+4+5*32+1+1+1+1+9+2+2;
+            let end = start + 32;
+            let collection_id = data_peek[start..end];
+            let collection_id_key = solana_sdk::pubkey::Pubkey::new_from_array(collection_id.try_into().unwrap());
+
+            let start = 1+32;
+            let end = start + 32;
+            let mint = data_peek[start..end];
+            let mint_key = solana_sdk::pubkey::Pubkey::new_from_array(mint.try_into().unwrap());
+
+            if first_creator_key.to_string() == self.collection_id || collection_id_key.to_string() == self.collection_id {
+                self.metadata_mints.push(mint);
             }
         } else if owner == TOKEN_PROGRAM_ID {
             let res = Account::unpack(account.data);
             if res.is_ok() {
                 let acc = res.unwrap();
-                
-                self.token_owners.insert(acc.mint.to_string(), acc.owner.to_string());
+
+                if acc.amount > 0 {
+                    self.token_owners.insert(acc.mint.to_string(), acc.owner.to_string());
+                }
             }
         }
 

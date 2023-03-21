@@ -4,6 +4,7 @@ use indicatif::{ProgressBar, ProgressBarIter, ProgressStyle};
 use libloading::{Library, Symbol};
 use log::{error, info};
 use reqwest::blocking::Response;
+use serde::Deserialize;
 use solana_geyser_plugin_interface::geyser_plugin_interface::GeyserPlugin;
 use solana_snapshot_etl::archived::ArchiveSnapshotExtractor;
 use solana_snapshot_etl::parallel::AppendVecConsumer;
@@ -45,14 +46,17 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     let mut loader = SupportedLoader::new(&args.source, Box::new(LoadProgressTracking {}))?;
     info!("Dumping to Geyser plugin: {}", &args.geyser);
 
-    let plugin = unsafe { load_plugin(&args.geyser)? };
+    let cfg = Config::read(&args.geyser)
+        .map_err(|e| format!("Config error: {}", e.to_string()))
+        .unwrap();
+    let plugin = unsafe { load_plugin(&args.geyser, cfg.libpath)? };
 
     assert!(
         plugin.account_data_notifications_enabled(),
         "Geyser plugin does not accept account data notifications"
     );
 
-    let mut dumper = GeyserDumper::new(plugin);
+    let mut dumper = GeyserDumper::new(plugin, cfg.throttle_ms);
     for append_vec in loader.iter() {
         match append_vec {
             Ok(v) => {
@@ -69,6 +73,21 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
+#[derive(Deserialize)]
+pub struct Config {
+    pub libpath: String,
+    pub throttle_ms: u64,
+}
+
+impl Config {
+    pub fn read(path: &str) -> Result<Self, std::io::Error> {
+        let data = std::fs::read_to_string(path)?;
+        let c: Config = serde_json::from_str(data.as_str())?;
+
+        Ok(c)
+    }
+}
+
 /// # Safety
 ///
 /// This function loads the dynamically linked library specified in the config file.
@@ -76,16 +95,11 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
 /// Causes memory corruption/UB on mismatching rustc or Solana versions, or if you look at the wrong way.
 pub unsafe fn load_plugin(
     config_file: &str,
+    libpath: String,
 ) -> Result<Box<dyn GeyserPlugin>, Box<dyn std::error::Error>> {
+    println!("{}", libpath);
     let config_path = PathBuf::from(config_file);
-
-    let config_content = std::fs::read_to_string(config_file)?;
-    let config: serde_json::Value = json5::from_str(&config_content)?;
-
-    let libpath = config["libpath"]
-        .as_str()
-        .ok_or("Missing libpath param in Geyser config")?;
-    let mut libpath = PathBuf::from(libpath);
+    let mut libpath = PathBuf::from(libpath.as_str());
     if libpath.is_relative() {
         let config_dir = config_path
             .parent()

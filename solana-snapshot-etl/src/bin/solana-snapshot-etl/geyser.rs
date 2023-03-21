@@ -11,6 +11,7 @@ use std::error::Error;
 use std::rc::Rc;
 
 pub(crate) struct GeyserDumper {
+    throttle_ms: u64,
     accounts_spinner: ProgressBar,
     plugin: Box<dyn GeyserPlugin>,
     accounts_count: u64,
@@ -29,7 +30,7 @@ impl AppendVecConsumer for GeyserDumper {
 }
 
 impl GeyserDumper {
-    pub(crate) fn new(plugin: Box<dyn GeyserPlugin>) -> Self {
+    pub(crate) fn new(plugin: Box<dyn GeyserPlugin>, throttle_ms: u64) -> Self {
         // TODO dedup spinner definitions
         let spinner_style = ProgressStyle::with_template(
             "{prefix:>10.bold.dim} {spinner} rate={per_sec}/s total={human_pos}",
@@ -43,6 +44,7 @@ impl GeyserDumper {
             accounts_spinner,
             plugin,
             accounts_count: 0,
+            throttle_ms,
         }
     }
 
@@ -67,6 +69,10 @@ impl GeyserDumper {
         self.accounts_count += 1;
         if self.accounts_count % 1024 == 0 {
             self.accounts_spinner.set_position(self.accounts_count);
+        }
+
+        if self.throttle_ms > 0 {
+            std::thread::sleep(std::time::Duration::from_millis(self.throttle_ms));
         }
         Ok(())
     }

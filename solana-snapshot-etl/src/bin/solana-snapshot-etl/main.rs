@@ -56,7 +56,7 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
         "Geyser plugin does not accept account data notifications"
     );
 
-    let mut dumper = GeyserDumper::new(plugin, cfg.throttle_ms);
+    let mut dumper = GeyserDumper::new(plugin, cfg.throttle_nanos);
     for append_vec in loader.iter() {
         match append_vec {
             Ok(v) => {
@@ -76,7 +76,7 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
 #[derive(Deserialize)]
 pub struct Config {
     pub libpath: String,
-    pub throttle_ms: u64,
+    pub throttle_nanos: u64,
 }
 
 impl Config {

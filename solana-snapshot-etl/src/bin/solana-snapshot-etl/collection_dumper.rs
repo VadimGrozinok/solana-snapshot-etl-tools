@@ -70,21 +70,21 @@ impl CollectionDumper {
 
             let start = 1+32+32+4+32+4+10+4+200+2+1+4;
             let end = start + 32;
-            let first_creator = data_peek[start..end];
-            let first_creator_key = solana_sdk::pubkey::Pubkey::new_from_array(first_creator.try_into().unwrap());
+            let first_creator = data_peek[start..end].as_ref();
+            let first_creator_key = solana_sdk::pubkey::Pubkey::new(first_creator);
 
             let start = 1+32+32+4+32+4+10+4+200+2+1+4+5*32+1+1+1+1+9+2+2;
             let end = start + 32;
-            let collection_id = data_peek[start..end];
-            let collection_id_key = solana_sdk::pubkey::Pubkey::new_from_array(collection_id.try_into().unwrap());
+            let collection_id = data_peek[start..end].as_ref();
+            let collection_id_key = solana_sdk::pubkey::Pubkey::new(collection_id);
 
             let start = 1+32;
             let end = start + 32;
-            let mint = data_peek[start..end];
-            let mint_key = solana_sdk::pubkey::Pubkey::new_from_array(mint.try_into().unwrap());
+            let mint = data_peek[start..end].as_ref();
+            let mint_key = solana_sdk::pubkey::Pubkey::new(mint);
 
             if first_creator_key.to_string() == self.collection_id || collection_id_key.to_string() == self.collection_id {
-                self.metadata_mints.push(mint);
+                self.metadata_mints.push(mint_key.to_string());
             }
         } else if owner == TOKEN_PROGRAM_ID {
             let res = Account::unpack(account.data);

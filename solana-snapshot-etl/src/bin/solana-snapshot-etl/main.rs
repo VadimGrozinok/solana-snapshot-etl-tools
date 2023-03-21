@@ -71,7 +71,7 @@ fn _main() -> Result<(), Box<dyn std::error::Error>> {
         drop(writer);
         println!("Done!");
     }
-    if let Some(collection_id) = args.collection {
+    if let Some(collection_id) = args.collection_id {
         info!("Dumping collection holders");
         let mut writer = collection_dumper::CollectionDumper::new(collection_id);
         for append_vec in loader.iter() {

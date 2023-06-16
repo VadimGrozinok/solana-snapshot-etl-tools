@@ -1,6 +1,10 @@
 {
-  "libpath": "../target/release/libsolana_geyser_plugin_scaffold.so",
-  "throttle_nanos": 500,
-  "zmq_port": 2000,
-  "zmq_no_wait": true
+    "libpath": "../target/release/libsolana_geyser_plugin_scaffold.so",
+    "throttle_nanos": 1,
+    "zmq_port": 3000,
+    "zmq_no_wait": false
+    "send_transactions": true,
+    "send_accounts": true,
+    "send_blocks": true,
+    "skip_vote_txs": true
 }
